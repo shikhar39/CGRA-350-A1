@@ -58,6 +58,11 @@ public:
 	Application(const Application&) = delete;
 	Application& operator=(const Application&) = delete;
 
+
+
+	//Create Models
+	void load_sphere(int latDiv, int longDiv);
+
 	// rendering callbacks (every frame)
 	void render();
 	void renderGUI();

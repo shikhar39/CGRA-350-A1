@@ -46,6 +46,9 @@ Application::Application(GLFWwindow *window) : m_window(window) {
 	m_model.color = vec3(1, 0, 0);
 }
 
+void Application::load_sphere(int latDiv, int longDiv ) {
+
+}
 
 void Application::render() {
 	
@@ -96,6 +99,11 @@ void Application::renderGUI() {
 	ImGui::SliderFloat("Pitch", &m_pitch, -pi<float>() / 2, pi<float>() / 2, "%.2f");
 	ImGui::SliderFloat("Yaw", &m_yaw, -pi<float>(), pi<float>(), "%.2f");
 	ImGui::SliderFloat("Distance", &m_distance, 0, 100, "%.2f", 2.0f);
+
+	// Select model to be drawn
+	if (ImGui::Button("Sphere")) {
+
+	}
 
 	// helpful drawing options
 	ImGui::Checkbox("Show axis", &m_show_axis);
