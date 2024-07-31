@@ -78,9 +78,9 @@ namespace cgra {
 		void print() const {
 			std::cout << "pos" << std::endl;
 			for (mesh_vertex v : vertices) {
-				std::cout << v.pos.x << ", " << v.pos.y << ", " << v.pos.z << ", "<< std::endl;
-				// std::cout << v.norm.x << ", " << v.norm.y << ", " << v.norm.z << ", ";
-				// std::cout << v.uv.x << ", " << v.uv.y << ", " << std::endl;
+				std::cout << v.pos.x << ", " << v.pos.y << ", " << v.pos.z << ", ";
+				std::cout << v.norm.x << ", " << v.norm.y << ", " << v.norm.z << ", ";
+				std::cout << v.uv.x << ", " << v.uv.y << ", " << std::endl;
 			}
 			std::cout << "idx" << std::endl;
 			for (int i : indices) {
