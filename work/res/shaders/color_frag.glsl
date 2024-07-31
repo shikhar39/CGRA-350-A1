@@ -23,4 +23,21 @@ void main() {
 
 	// output to the frambuffer
 	fb_color = vec4(color, 1);
+
+	/*
+	vec3 lightColor = vec3(1.0f, 1.0f, 1.0f);
+	vec3 lightDir = normalize(vec3(-1.0f, -1.0f, -1.0f));
+	float ambientStrength = 0.2;
+	float diffuseStrength = 0.6;
+
+	vec3 ambient = lightColor * ambientStrength;
+
+	vec3 norm = normalize(f_in.normal);
+    //vec3 lightDir = normalize(lightPos - f_in.position);
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = lightColor * (diff * diffuseStrength);
+
+	vec3 result = ambient + diffuse;
+	fb_color = vec4(result * uColor, 1);
+	*/
 }

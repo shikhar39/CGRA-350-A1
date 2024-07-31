@@ -48,7 +48,17 @@ private:
 	bool m_showWireframe = false;
 
 	// geometry
+	enum Shape{
+		NONE, 
+		SP_LATLONG,
+		SP_CUBE,
+		TOR_LATLONG
+	};
+
+	Shape m_shape = NONE;
 	basic_model m_model;
+	int m_latDivision = 10;
+	int m_longDivision = 10; 
 
 public:
 	// setup
@@ -57,6 +67,11 @@ public:
 	// disable copy constructors (for safety)
 	Application(const Application&) = delete;
 	Application& operator=(const Application&) = delete;
+
+
+
+	//Create Models
+	void load_sphere(int latDiv, int longDiv);
 
 	// rendering callbacks (every frame)
 	void render();
