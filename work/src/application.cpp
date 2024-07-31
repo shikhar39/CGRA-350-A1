@@ -47,7 +47,39 @@ Application::Application(GLFWwindow *window) : m_window(window) {
 }
 
 void Application::load_sphere(int latDiv, int longDiv ) {
+	mesh_builder mb;
+	
+	for(int j = 0; j < longDiv + 1; j++) {
+		float phi = j * glm::pi<GLfloat>()/longDiv;
+		
+		for(int i = 0; i < latDiv; i++ ) {
+			float theta =  i * 2 * glm::pi<GLfloat>()/latDiv;
+			
+			glm::vec3 pos1(glm::sin(theta) * glm::sin(phi), glm::cos(theta)* glm::sin(phi), glm::cos(phi));
+			mb.push_vertex(mesh_vertex{pos1, pos1, glm::vec2(0)});
+			
+		}
+	}
+	for (int j = 0; j < longDiv ; j++) {
+		for(int i = 0; i < latDiv - 1; i++){
+			mb.push_index(j * latDiv + i);
+			mb.push_index(j * latDiv + i + 1);
+			mb.push_index((j + 1) * latDiv + i);
+			mb.push_index(j * latDiv + i + 1);
+			mb.push_index((j + 1) * latDiv + i);
+			mb.push_index((j + 1) * latDiv + i + 1);
+		}
+			mb.push_index(j * latDiv + latDiv - 1);
+			mb.push_index(j * latDiv + 0);
+			mb.push_index((j + 1) * latDiv + latDiv - 1);
+			mb.push_index(j * latDiv + 0);
+			mb.push_index((j + 1) * latDiv + latDiv - 1);
+			mb.push_index((j + 1) * latDiv );
 
+	}
+	m_model.mesh = mb.build();
+
+	
 }
 
 void Application::render() {
@@ -101,8 +133,21 @@ void Application::renderGUI() {
 	ImGui::SliderFloat("Distance", &m_distance, 0, 100, "%.2f", 2.0f);
 
 	// Select model to be drawn
-	if (ImGui::Button("Sphere")) {
-
+	if (ImGui::Button("Sphere LatLong")) {
+		m_shape = SP_LATLONG;
+		load_sphere(m_latDivision, m_longDivision);
+	}
+	if (ImGui::Button("Sphere Cube")){
+		m_shape = SP_CUBE;
+	}
+	if (m_shape == SP_LATLONG) {
+		int prevLatDiv = m_latDivision;
+		int prevLongDiv = m_longDivision;
+		ImGui::SliderInt("Lat Divisions", &m_latDivision, 2, 500);
+		ImGui::SliderInt("Long Divisions", &m_longDivision, 2, 500);
+		if (prevLatDiv != m_latDivision || prevLongDiv != m_longDivision){
+			load_sphere(m_latDivision, m_longDivision);
+		}
 	}
 
 	// helpful drawing options
