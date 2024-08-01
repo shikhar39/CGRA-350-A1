@@ -46,7 +46,7 @@ Application::Application(GLFWwindow *window) : m_window(window) {
 	m_model.color = vec3(1, 0, 0);
 }
 
-void Application::load_sphere_lat_long(int latDiv, int longDiv ) {
+void Application::load_sphere_lat_long(float radius, int latDiv, int longDiv ) {
 	mesh_builder mb;
 	
 	for(int j = 0; j < longDiv + 1; j++) {
@@ -55,8 +55,8 @@ void Application::load_sphere_lat_long(int latDiv, int longDiv ) {
 		for(int i = 0; i < latDiv; i++ ) {
 			float theta =  i * 2 * glm::pi<GLfloat>()/latDiv;
 			
-			glm::vec3 pos1(glm::sin(theta) * glm::sin(phi), glm::cos(theta)* glm::sin(phi), glm::cos(phi));
-			mb.push_vertex(mesh_vertex{pos1, pos1, glm::vec2(0)});
+			glm::vec3 pos(glm::sin(theta) * glm::sin(phi), glm::cos(theta)* glm::sin(phi), glm::cos(phi));
+			mb.push_vertex(mesh_vertex{radius * pos, pos, glm::vec2(0)});
 			
 		}
 	}
@@ -82,16 +82,16 @@ void Application::load_sphere_lat_long(int latDiv, int longDiv ) {
 
 }
 
-void Application::load_sphere_cube(int divisions) {
+void Application::load_sphere_cube(float radius, float explodeDistance, int divisions) {
 	mesh_builder mb;
 	float offset = 2.0f / (divisions - 1);
 	// Face 0
 	for (int j = 0; j < divisions; j++){
 		for (int i = 0; i < divisions; i++){
 			glm::vec3 pos(-1, -1 + j * offset, -1 + i * offset);
-			pos = glm::normalize(pos);
+			pos = radius * glm::normalize(pos);
 			if(m_expand){
-				pos = pos + glm::vec3(-1, 0, 0);
+				pos = pos + glm::vec3(-explodeDistance, 0, 0);
 			}
 			mb.push_vertex(mesh_vertex{pos, pos, glm::vec2(0,0)});
 		}
@@ -110,9 +110,9 @@ void Application::load_sphere_cube(int divisions) {
 	for (int j = 0; j < divisions; j++){
 		for (int i = 0; i < divisions; i++){
 			glm::vec3 pos(1, -1 + j * offset, -1 + i * offset);
-			pos = glm::normalize(pos);
+			pos = radius * glm::normalize(pos);
 			if(m_expand){
-				pos = pos + glm::vec3(1, 0, 0);
+				pos = pos + glm::vec3(explodeDistance, 0, 0);
 			}
 			mb.push_vertex(mesh_vertex{pos, pos, glm::vec2(0,0)});
 		}
@@ -131,9 +131,9 @@ void Application::load_sphere_cube(int divisions) {
 	for (int j = 0; j < divisions; j++){
 		for (int i = 0; i < divisions; i++){
 			glm::vec3 pos(-1 + j * offset, -1,  -1 + i * offset);
-			pos = glm::normalize(pos);
+			pos = radius * glm::normalize(pos);
 			if(m_expand){
-				pos = pos + glm::vec3(0, -1, 0);
+				pos = pos + glm::vec3(0, -explodeDistance, 0);
 			}
 			mb.push_vertex(mesh_vertex{pos, pos, glm::vec2(0,0)});
 		}
@@ -152,9 +152,9 @@ void Application::load_sphere_cube(int divisions) {
 	for (int j = 0; j < divisions; j++){
 		for (int i = 0; i < divisions; i++){
 			glm::vec3 pos(-1 + j * offset, 1, -1 + i * offset);
-			pos = glm::normalize(pos);
+			pos = radius * glm::normalize(pos);
 			if(m_expand){
-				pos = pos + glm::vec3(0, 1, 0);
+				pos = pos + glm::vec3(0, explodeDistance, 0);
 			}
 			mb.push_vertex(mesh_vertex{pos, pos, glm::vec2(0,0)});
 		}
@@ -173,9 +173,9 @@ void Application::load_sphere_cube(int divisions) {
 	for (int j = 0; j < divisions; j++){
 		for (int i = 0; i < divisions; i++){
 			glm::vec3 pos(-1 + j * offset,  -1 + i * offset, -1);
-			pos = glm::normalize(pos);
+			pos = radius * glm::normalize(pos);
 			if(m_expand){
-				pos = pos + glm::vec3(0, 0, -1);
+				pos = pos + glm::vec3(0, 0, -explodeDistance);
 			}
 			mb.push_vertex(mesh_vertex{pos, pos, glm::vec2(0,0)});
 		}
@@ -194,9 +194,9 @@ void Application::load_sphere_cube(int divisions) {
 	for (int j = 0; j < divisions; j++){
 		for (int i = 0; i < divisions; i++){
 			glm::vec3 pos(-1 + j * offset,  -1 + i * offset, 1);
-			pos = glm::normalize(pos);
+			pos = radius * glm::normalize(pos);
 			if(m_expand){
-				pos = pos + glm::vec3(0, 0, 1);
+				pos = pos + glm::vec3(0, 0, explodeDistance);
 			}
 			mb.push_vertex(mesh_vertex{pos, pos, glm::vec2(0,0)});
 		}
@@ -314,11 +314,11 @@ void Application::renderGUI() {
 	// Select model to be drawn
 	if (ImGui::Button("Sphere LatLong")) {
 		m_shape = SP_LATLONG;
-		load_sphere_lat_long(m_latDivision, m_longDivision);
+		load_sphere_lat_long(m_sp_rad, m_latDivision, m_longDivision);
 	}
 	if (ImGui::Button("Sphere Cube")){
 		m_shape = SP_CUBE;
-		load_sphere_cube(m_cubeDivisions);
+		load_sphere_cube(m_sp_rad, m_sp_cube_exp_dis, m_cubeDivisions);
 	}
 	if (ImGui::Button("Torus")){
 		m_shape = TOR_LATLONG;
@@ -328,22 +328,34 @@ void Application::renderGUI() {
 	if (m_shape == SP_LATLONG) {
 		int prevLatDiv = m_latDivision;
 		int prevLongDiv = m_longDivision;
+		float prevRad = m_sp_rad;
+		ImGui::SliderFloat("Radius", &m_sp_rad, 0.5f, 5.0f);
 		ImGui::SliderInt("Lat Divisions", &m_latDivision, 2, 30);
 		ImGui::SliderInt("Long Divisions", &m_longDivision, 2, 30);
-		if (prevLatDiv != m_latDivision || prevLongDiv != m_longDivision){
-			load_sphere_lat_long(m_latDivision, m_longDivision);
+		if (prevLatDiv != m_latDivision || prevLongDiv != m_longDivision || prevRad != m_sp_rad){
+			load_sphere_lat_long(m_sp_rad, m_latDivision, m_longDivision);
 		}
 	}
 
 	if (m_shape == SP_CUBE) {
 		int prevDivisions = m_cubeDivisions;
+		float prevRad = m_sp_rad;
+		
 		if(ImGui::Button("Explode")) {
 			m_expand = !m_expand;
-			load_sphere_cube(m_cubeDivisions);
+			load_sphere_cube(m_sp_rad, m_sp_cube_exp_dis, m_cubeDivisions);
 		}
+		if(m_expand) {
+			float prevExpDis = m_sp_cube_exp_dis;
+			ImGui::SliderFloat("Explode Distance", &m_sp_cube_exp_dis, 0.0f, 5.0f);
+			if (prevExpDis != m_sp_cube_exp_dis) {
+				load_sphere_cube(m_sp_rad, m_sp_cube_exp_dis, m_cubeDivisions);
+			}
+		}
+		ImGui::SliderFloat("Radius", &m_sp_rad, 0.5f, 5.0f);
 		ImGui::SliderInt("Cube Divisions", &m_cubeDivisions, 2, 30);
-		if (prevDivisions != m_cubeDivisions){
-			load_sphere_cube(m_cubeDivisions);
+		if (prevDivisions != m_cubeDivisions || prevRad != m_sp_rad){
+			load_sphere_cube(m_sp_rad, m_sp_cube_exp_dis, m_cubeDivisions);
 		}
 	}
 	if (m_shape == TOR_LATLONG) {
