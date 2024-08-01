@@ -46,7 +46,7 @@ Application::Application(GLFWwindow *window) : m_window(window) {
 	m_model.color = vec3(1, 0, 0);
 }
 
-void Application::load_sphere(int latDiv, int longDiv ) {
+void Application::load_sphere_lat_long(int latDiv, int longDiv ) {
 	mesh_builder mb;
 	
 	for(int j = 0; j < longDiv + 1; j++) {
@@ -79,7 +79,186 @@ void Application::load_sphere(int latDiv, int longDiv ) {
 	}
 	m_model.mesh = mb.build();
 
-	
+
+}
+
+void Application::load_sphere_cube(int divisions) {
+	mesh_builder mb;
+	float offset = 2.0f / (divisions - 1);
+	// Face 0
+	for (int j = 0; j < divisions; j++){
+		for (int i = 0; i < divisions; i++){
+			glm::vec3 pos(-1, -1 + j * offset, -1 + i * offset);
+			pos = glm::normalize(pos);
+			if(m_expand){
+				pos = pos + glm::vec3(-1, 0, 0);
+			}
+			mb.push_vertex(mesh_vertex{pos, pos, glm::vec2(0,0)});
+		}
+	}
+	for (int j = 0; j < divisions - 1; j++){
+		for (int i = 0; i < divisions - 1; i++){
+			mb.push_index(j * divisions + i);
+			mb.push_index(j * divisions + i + 1);
+			mb.push_index((j + 1) * divisions + i);
+			mb.push_index(j * divisions + i + 1);
+			mb.push_index((j + 1) * divisions + i);
+			mb.push_index((j + 1) * divisions + i + 1);
+		}
+	}
+	// Face 1
+	for (int j = 0; j < divisions; j++){
+		for (int i = 0; i < divisions; i++){
+			glm::vec3 pos(1, -1 + j * offset, -1 + i * offset);
+			pos = glm::normalize(pos);
+			if(m_expand){
+				pos = pos + glm::vec3(1, 0, 0);
+			}
+			mb.push_vertex(mesh_vertex{pos, pos, glm::vec2(0,0)});
+		}
+	}
+	for (int j = 0; j < divisions - 1; j++){
+		for (int i = 0; i < divisions - 1; i++){
+			mb.push_index(divisions*divisions + j * divisions + i);
+			mb.push_index(divisions*divisions + j * divisions + i + 1);
+			mb.push_index(divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(divisions*divisions + j * divisions + i + 1);
+			mb.push_index(divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(divisions*divisions + (j + 1) * divisions + i + 1);
+		}
+	}
+	// Face 2
+	for (int j = 0; j < divisions; j++){
+		for (int i = 0; i < divisions; i++){
+			glm::vec3 pos(-1 + j * offset, -1,  -1 + i * offset);
+			pos = glm::normalize(pos);
+			if(m_expand){
+				pos = pos + glm::vec3(0, -1, 0);
+			}
+			mb.push_vertex(mesh_vertex{pos, pos, glm::vec2(0,0)});
+		}
+	}
+	for (int j = 0; j < divisions - 1; j++){
+		for (int i = 0; i < divisions - 1; i++){
+			mb.push_index(2 * divisions*divisions + j * divisions + i);
+			mb.push_index(2 * divisions*divisions + j * divisions + i + 1);
+			mb.push_index(2 * divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(2 * divisions*divisions + j * divisions + i + 1);
+			mb.push_index(2 * divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(2 * divisions*divisions + (j + 1) * divisions + i + 1);
+		}
+	}
+	// Face 3
+	for (int j = 0; j < divisions; j++){
+		for (int i = 0; i < divisions; i++){
+			glm::vec3 pos(-1 + j * offset, 1, -1 + i * offset);
+			pos = glm::normalize(pos);
+			if(m_expand){
+				pos = pos + glm::vec3(0, 1, 0);
+			}
+			mb.push_vertex(mesh_vertex{pos, pos, glm::vec2(0,0)});
+		}
+	}
+	for (int j = 0; j < divisions - 1; j++){
+		for (int i = 0; i < divisions - 1; i++){
+			mb.push_index(3 * divisions*divisions + j * divisions + i);
+			mb.push_index(3 * divisions*divisions + j * divisions + i + 1);
+			mb.push_index(3 * divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(3 * divisions*divisions + j * divisions + i + 1);
+			mb.push_index(3 * divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(3 * divisions*divisions + (j + 1) * divisions + i + 1);
+		}
+	}
+	// Face 4
+	for (int j = 0; j < divisions; j++){
+		for (int i = 0; i < divisions; i++){
+			glm::vec3 pos(-1 + j * offset,  -1 + i * offset, -1);
+			pos = glm::normalize(pos);
+			if(m_expand){
+				pos = pos + glm::vec3(0, 0, -1);
+			}
+			mb.push_vertex(mesh_vertex{pos, pos, glm::vec2(0,0)});
+		}
+	}
+	for (int j = 0; j < divisions - 1; j++){
+		for (int i = 0; i < divisions - 1; i++){
+			mb.push_index(4 * divisions*divisions + j * divisions + i);
+			mb.push_index(4 * divisions*divisions + j * divisions + i + 1);
+			mb.push_index(4 * divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(4 * divisions*divisions + j * divisions + i + 1);
+			mb.push_index(4 * divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(4 * divisions*divisions + (j + 1) * divisions + i + 1);
+		}
+	}
+	// Face 5
+	for (int j = 0; j < divisions; j++){
+		for (int i = 0; i < divisions; i++){
+			glm::vec3 pos(-1 + j * offset,  -1 + i * offset, 1);
+			pos = glm::normalize(pos);
+			if(m_expand){
+				pos = pos + glm::vec3(0, 0, 1);
+			}
+			mb.push_vertex(mesh_vertex{pos, pos, glm::vec2(0,0)});
+		}
+	}
+	for (int j = 0; j < divisions - 1; j++){
+		for (int i = 0; i < divisions - 1; i++){
+			mb.push_index(5 * divisions*divisions + j * divisions + i);
+			mb.push_index(5 * divisions*divisions + j * divisions + i + 1);
+			mb.push_index(5 * divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(5 * divisions*divisions + j * divisions + i + 1);
+			mb.push_index(5 * divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(5 * divisions*divisions + (j + 1) * divisions + i + 1);
+		}
+	}
+	m_model.mesh = mb.build();
+}
+
+void Application::load_tor_lat_long(float radius, float thickness, int latDiv, int longDiv) {
+	mesh_builder mb;
+	for(int j = 0; j < longDiv + 1; j++) {
+		float phi = j * 2 * glm::pi<GLfloat>()/longDiv;
+		
+		for(int i = 0; i < latDiv; i++ ) {
+			float theta =  i * 2 * glm::pi<GLfloat>()/latDiv;
+			
+			glm::vec3 pos(thickness * glm::cos(theta), thickness * glm::sin(theta), 0);
+			glm::vec3 norm = glm::normalize(pos);
+			glm::vec3 axis( 1, 0, 0);
+			glm::vec3 transVec(0, radius, 0);
+			
+			glm::mat4 rotationMat = glm::rotate(glm::mat4(1.0f), phi, axis);
+			
+			// pos = glm::vec3(rotationMat * glm::vec4(pos, 1.0f));
+			transVec = glm::vec3(rotationMat * glm::vec4(transVec, 1.0f));
+			norm = glm::vec3(rotationMat * glm::vec4(norm, 1.0f));
+
+			glm::mat4 transMat = glm::translate(glm::mat4(1.0f), transVec);
+			pos = glm::vec3(transMat * rotationMat * glm::vec4(pos, 1.0f)); 
+
+			mb.push_vertex(mesh_vertex{pos, norm, glm::vec2(0)});
+			
+		}
+	}
+	for (int j = 0; j < longDiv; j++) {
+		for(int i = 0; i < latDiv - 1; i++){
+			mb.push_index(j * latDiv + i);
+			mb.push_index(j * latDiv + i + 1);
+			mb.push_index((j + 1) * latDiv + i);
+			mb.push_index(j * latDiv + i + 1);
+			mb.push_index((j + 1) * latDiv + i);
+			mb.push_index((j + 1) * latDiv + i + 1);
+		}
+			mb.push_index(j * latDiv + latDiv - 1);
+			mb.push_index(j * latDiv + 0);
+			mb.push_index((j + 1) * latDiv + latDiv - 1);
+			mb.push_index(j * latDiv + 0);
+			mb.push_index((j + 1) * latDiv + latDiv - 1);
+			mb.push_index((j + 1) * latDiv );
+
+	}
+	m_model.mesh = mb.build();
+
 }
 
 void Application::render() {
@@ -135,18 +314,50 @@ void Application::renderGUI() {
 	// Select model to be drawn
 	if (ImGui::Button("Sphere LatLong")) {
 		m_shape = SP_LATLONG;
-		load_sphere(m_latDivision, m_longDivision);
+		load_sphere_lat_long(m_latDivision, m_longDivision);
 	}
 	if (ImGui::Button("Sphere Cube")){
 		m_shape = SP_CUBE;
+		load_sphere_cube(m_cubeDivisions);
+	}
+	if (ImGui::Button("Torus")){
+		m_shape = TOR_LATLONG;
+		load_tor_lat_long(m_tor_radius, m_tor_thickness, m_latDivision, m_longDivision);
+
 	}
 	if (m_shape == SP_LATLONG) {
 		int prevLatDiv = m_latDivision;
 		int prevLongDiv = m_longDivision;
-		ImGui::SliderInt("Lat Divisions", &m_latDivision, 2, 500);
-		ImGui::SliderInt("Long Divisions", &m_longDivision, 2, 500);
+		ImGui::SliderInt("Lat Divisions", &m_latDivision, 2, 30);
+		ImGui::SliderInt("Long Divisions", &m_longDivision, 2, 30);
 		if (prevLatDiv != m_latDivision || prevLongDiv != m_longDivision){
-			load_sphere(m_latDivision, m_longDivision);
+			load_sphere_lat_long(m_latDivision, m_longDivision);
+		}
+	}
+
+	if (m_shape == SP_CUBE) {
+		int prevDivisions = m_cubeDivisions;
+		if(ImGui::Button("Explode")) {
+			m_expand = !m_expand;
+			load_sphere_cube(m_cubeDivisions);
+		}
+		ImGui::SliderInt("Cube Divisions", &m_cubeDivisions, 2, 30);
+		if (prevDivisions != m_cubeDivisions){
+			load_sphere_cube(m_cubeDivisions);
+		}
+	}
+	if (m_shape == TOR_LATLONG) {
+		int prevLatDiv = m_latDivision;
+		int prevLongDiv = m_longDivision;
+		float prevRad = m_tor_radius;
+		float prevThick = m_tor_thickness;
+		ImGui::SliderFloat("Radius", &m_tor_radius, 2.0f, 10.0f);
+		ImGui::SliderFloat("Thickness", &m_tor_thickness, 0.5f, 3.0f);		
+		ImGui::SliderInt("Lat Divisions", &m_latDivision, 2, 30);
+		ImGui::SliderInt("Long Divisions", &m_longDivision, 2, 30);
+		if (prevLatDiv != m_latDivision || prevLongDiv != m_longDivision || prevRad != m_tor_radius || prevThick != m_tor_thickness){
+			load_tor_lat_long(m_tor_radius, m_tor_thickness, m_latDivision, m_longDivision);
+
 		}
 	}
 

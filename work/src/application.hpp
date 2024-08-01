@@ -57,9 +57,16 @@ private:
 
 	Shape m_shape = NONE;
 	basic_model m_model;
+	//Sphere_LatLong and TORUS_LatLong Properties
 	int m_latDivision = 10;
-	int m_longDivision = 10; 
+	int m_longDivision = 10;
 
+	float m_tor_radius = 3.0f;
+	float m_tor_thickness = 1.0f;
+
+	// Sphere From cube Properties
+	int m_cubeDivisions = 5;
+	bool m_expand = false;
 public:
 	// setup
 	Application(GLFWwindow *);
@@ -71,7 +78,9 @@ public:
 
 
 	//Create Models
-	void load_sphere(int latDiv, int longDiv);
+	void load_sphere_lat_long(int latDiv, int longDiv);
+	void load_sphere_cube(int divisions);
+	void load_tor_lat_long(float rad, float thickness, int latDivisions, int longDivisions);
 
 	// rendering callbacks (every frame)
 	void render();
