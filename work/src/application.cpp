@@ -24,11 +24,20 @@ using namespace glm;
 
 void basic_model::draw(const glm::mat4 &view, const glm::mat4 proj) {
 	mat4 modelview = view * modelTransform;
-	
 	glUseProgram(shader); // load shader and variables
 	glUniformMatrix4fv(glGetUniformLocation(shader, "uProjectionMatrix"), 1, false, value_ptr(proj));
 	glUniformMatrix4fv(glGetUniformLocation(shader, "uModelViewMatrix"), 1, false, value_ptr(modelview));
 	glUniform3fv(glGetUniformLocation(shader, "uColor"), 1, value_ptr(color));
+	glUniform1f(glGetUniformLocation(shader, "ka"), ka);
+	glUniform1f(glGetUniformLocation(shader, "F0"), F0);
+	glUniform1f(glGetUniformLocation(shader, "roughness"), roughness);
+	glUniform1f(glGetUniformLocation(shader, "rho"), rho);
+	glUniform1f(glGetUniformLocation(shader, "albedo"), albedo);
+	glUniform1i(glGetUniformLocation(shader, "texture1"), 0);
+	glUniform1i(glGetUniformLocation(shader, "texture2"), 1);
+
+
+
 
 	mesh.draw(); // draw
 }
@@ -38,29 +47,256 @@ Application::Application(GLFWwindow *window) : m_window(window) {
 	
 	shader_builder sb;
     sb.set_shader(GL_VERTEX_SHADER, CGRA_SRCDIR + std::string("//res//shaders//color_vert.glsl"));
-	sb.set_shader(GL_FRAGMENT_SHADER, CGRA_SRCDIR + std::string("//res//shaders//color_frag.glsl"));
+	sb.set_shader(GL_FRAGMENT_SHADER, CGRA_SRCDIR + std::string("//res//shaders//phong_frag.glsl"));
 	GLuint shader = sb.build();
+	m_model.normalTexture = rgba_image(CGRA_SRCDIR + std::string("//res//textures//NormalMap.png")).uploadTexture(GL_TEXTURE0); 
+	m_model.colorTexture = rgba_image(CGRA_SRCDIR + std::string("//res//textures//Texture.png")).uploadTexture(GL_TEXTURE1); 
+
 
 	m_model.shader = shader;
 	m_model.mesh = load_wavefront_data(CGRA_SRCDIR + std::string("/res//assets//teapot.obj")).build();
 	m_model.color = vec3(1, 0, 0);
 }
 
-void Application::load_sphere(int latDiv, int longDiv ) {
+void Application::load_phong(){
+	m_shader = PHONG;
+	shader_builder sb;
+    sb.set_shader(GL_VERTEX_SHADER, CGRA_SRCDIR + std::string("//res//shaders//color_vert.glsl"));
+	sb.set_shader(GL_FRAGMENT_SHADER, CGRA_SRCDIR + std::string("//res//shaders//phong_frag.glsl"));
+	GLuint phong_shader = sb.build();
+	m_model.shader = phong_shader;
+
+}
+
+void Application::load_cook_torrence(){
+	m_shader = COOK_TORRENCE;
+	shader_builder sb;
+    sb.set_shader(GL_VERTEX_SHADER, CGRA_SRCDIR + std::string("//res//shaders//color_vert.glsl"));
+	sb.set_shader(GL_FRAGMENT_SHADER, CGRA_SRCDIR + std::string("//res//shaders//cook_torrence_frag.glsl"));
+	GLuint cook_torrence_shader = sb.build();
+	m_model.shader = cook_torrence_shader;
+}
+
+void Application::load_oren_nayar(){
+	m_shader = OREN_NAYAR;
+	shader_builder sb;
+    sb.set_shader(GL_VERTEX_SHADER, CGRA_SRCDIR + std::string("//res//shaders//color_vert.glsl"));
+	sb.set_shader(GL_FRAGMENT_SHADER, CGRA_SRCDIR + std::string("//res//shaders//oren_nayar_frag.glsl"));
+	GLuint oren_nayar_shader = sb.build();
+	m_model.shader = oren_nayar_shader;
+}
+
+void Application::load_combo_shader(){
+	m_shader = COMBO;
+	shader_builder sb;
+    sb.set_shader(GL_VERTEX_SHADER, CGRA_SRCDIR + std::string("//res//shaders//color_vert.glsl"));
+	sb.set_shader(GL_FRAGMENT_SHADER, CGRA_SRCDIR + std::string("//res//shaders//combo_frag.glsl"));
+	GLuint combo_shader = sb.build();
+	m_model.shader = combo_shader;
+}
+
+void Application::load_normal_map_shader(){
+	m_shader = NORMAL_MAP;
+	shader_builder sb;
+    sb.set_shader(GL_VERTEX_SHADER, CGRA_SRCDIR + std::string("//res//shaders//bump_vert.glsl"));
+	sb.set_shader(GL_FRAGMENT_SHADER, CGRA_SRCDIR + std::string("//res//shaders//bump_frag.glsl"));
+	GLuint normal_map = sb.build();
+	m_model.shader = normal_map;
+}
+
+void Application::load_sphere_lat_long(float radius, int latDiv, int longDiv ) {
 	mesh_builder mb;
 	
 	for(int j = 0; j < longDiv + 1; j++) {
 		float phi = j * glm::pi<GLfloat>()/longDiv;
 		
 		for(int i = 0; i < latDiv; i++ ) {
-			float theta =  i * 2 * glm::pi<GLfloat>()/latDiv;
+			float theta =  i * 2 * glm::pi<GLfloat>()/(latDiv - 1);
 			
-			glm::vec3 pos1(glm::sin(theta) * glm::sin(phi), glm::cos(theta)* glm::sin(phi), glm::cos(phi));
-			mb.push_vertex(mesh_vertex{pos1, pos1, glm::vec2(0)});
+			glm::vec3 pos(glm::sin(theta) * glm::sin(phi), glm::cos(theta)* glm::sin(phi), glm::cos(phi));
+			glm::vec2 tex_uv((1.0/latDiv)* i, (1.0/longDiv) * j);
+			glm::vec3 tan(-glm::sin(theta), glm::cos(theta), 0);
+			glm::vec3 bitan(glm::cos(theta) * glm::cos(phi), glm::sin(theta)* glm::cos(phi), -glm::sin(phi));
+
+			mb.push_vertex(mesh_vertex{radius * pos, pos, tan, bitan, tex_uv});
 			
 		}
 	}
 	for (int j = 0; j < longDiv ; j++) {
+		for(int i = 0; i < latDiv - 1; i++){
+			mb.push_index(j * latDiv + i);
+			mb.push_index(j * latDiv + i + 1);
+			mb.push_index((j + 1) * latDiv + i);
+			mb.push_index(j * latDiv + i + 1);
+			mb.push_index((j + 1) * latDiv + i);
+			mb.push_index((j + 1) * latDiv + i + 1);
+		}
+
+	}
+	m_model.mesh = mb.build();
+
+
+}
+
+void Application::load_sphere_cube(float radius, float explodeDistance, int divisions) {
+	mesh_builder mb;
+	float offset = 2.0f / (divisions - 1);
+	// Face 0
+	for (int j = 0; j < divisions; j++){
+		for (int i = 0; i < divisions; i++){
+			glm::vec3 pos(-1, -1 + j * offset, -1 + i * offset);
+			pos = radius * glm::normalize(pos);
+			if(m_expand){
+				pos = pos + glm::vec3(-explodeDistance, 0, 0);
+			}
+			mb.push_vertex(mesh_vertex{pos, pos, glm::vec3(0), glm::vec3(0), glm::vec2(0,0)});
+		}
+	}
+	for (int j = 0; j < divisions - 1; j++){
+		for (int i = 0; i < divisions - 1; i++){
+			mb.push_index(j * divisions + i);
+			mb.push_index(j * divisions + i + 1);
+			mb.push_index((j + 1) * divisions + i);
+			mb.push_index(j * divisions + i + 1);
+			mb.push_index((j + 1) * divisions + i);
+			mb.push_index((j + 1) * divisions + i + 1);
+		}
+	}
+	// Face 1
+	for (int j = 0; j < divisions; j++){
+		for (int i = 0; i < divisions; i++){
+			glm::vec3 pos(1, -1 + j * offset, -1 + i * offset);
+			pos = radius * glm::normalize(pos);
+			if(m_expand){
+				pos = pos + glm::vec3(explodeDistance, 0, 0);
+			}
+			mb.push_vertex(mesh_vertex{pos, pos, glm::vec3(0), glm::vec3(0), glm::vec2(0,0)});
+		}
+	}
+	for (int j = 0; j < divisions - 1; j++){
+		for (int i = 0; i < divisions - 1; i++){
+			mb.push_index(divisions*divisions + j * divisions + i);
+			mb.push_index(divisions*divisions + j * divisions + i + 1);
+			mb.push_index(divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(divisions*divisions + j * divisions + i + 1);
+			mb.push_index(divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(divisions*divisions + (j + 1) * divisions + i + 1);
+		}
+	}
+	// Face 2
+	for (int j = 0; j < divisions; j++){
+		for (int i = 0; i < divisions; i++){
+			glm::vec3 pos(-1 + j * offset, -1,  -1 + i * offset);
+			pos = radius * glm::normalize(pos);
+			if(m_expand){
+				pos = pos + glm::vec3(0, -explodeDistance, 0);
+			}
+			mb.push_vertex(mesh_vertex{pos, pos, glm::vec3(0), glm::vec3(0), glm::vec2(0,0)});
+		}
+	}
+	for (int j = 0; j < divisions - 1; j++){
+		for (int i = 0; i < divisions - 1; i++){
+			mb.push_index(2 * divisions*divisions + j * divisions + i);
+			mb.push_index(2 * divisions*divisions + j * divisions + i + 1);
+			mb.push_index(2 * divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(2 * divisions*divisions + j * divisions + i + 1);
+			mb.push_index(2 * divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(2 * divisions*divisions + (j + 1) * divisions + i + 1);
+		}
+	}
+	// Face 3
+	for (int j = 0; j < divisions; j++){
+		for (int i = 0; i < divisions; i++){
+			glm::vec3 pos(-1 + j * offset, 1, -1 + i * offset);
+			pos = radius * glm::normalize(pos);
+			if(m_expand){
+				pos = pos + glm::vec3(0, explodeDistance, 0);
+			}
+			mb.push_vertex(mesh_vertex{pos, pos, glm::vec3(0), glm::vec3(0), glm::vec2(0,0)});
+		}
+	}
+	for (int j = 0; j < divisions - 1; j++){
+		for (int i = 0; i < divisions - 1; i++){
+			mb.push_index(3 * divisions*divisions + j * divisions + i);
+			mb.push_index(3 * divisions*divisions + j * divisions + i + 1);
+			mb.push_index(3 * divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(3 * divisions*divisions + j * divisions + i + 1);
+			mb.push_index(3 * divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(3 * divisions*divisions + (j + 1) * divisions + i + 1);
+		}
+	}
+	// Face 4
+	for (int j = 0; j < divisions; j++){
+		for (int i = 0; i < divisions; i++){
+			glm::vec3 pos(-1 + j * offset,  -1 + i * offset, -1);
+			pos = radius * glm::normalize(pos);
+			if(m_expand){
+				pos = pos + glm::vec3(0, 0, -explodeDistance);
+			}
+			mb.push_vertex(mesh_vertex{pos, pos, glm::vec3(0), glm::vec3(0), glm::vec2(0,0)});
+		}
+	}
+	for (int j = 0; j < divisions - 1; j++){
+		for (int i = 0; i < divisions - 1; i++){
+			mb.push_index(4 * divisions*divisions + j * divisions + i);
+			mb.push_index(4 * divisions*divisions + j * divisions + i + 1);
+			mb.push_index(4 * divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(4 * divisions*divisions + j * divisions + i + 1);
+			mb.push_index(4 * divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(4 * divisions*divisions + (j + 1) * divisions + i + 1);
+		}
+	}
+	// Face 5
+	for (int j = 0; j < divisions; j++){
+		for (int i = 0; i < divisions; i++){
+			glm::vec3 pos(-1 + j * offset,  -1 + i * offset, 1);
+			pos = radius * glm::normalize(pos);
+			if(m_expand){
+				pos = pos + glm::vec3(0, 0, explodeDistance);
+			}
+			mb.push_vertex(mesh_vertex{pos, pos, glm::vec3(0), glm::vec3(0), glm::vec2(0,0)});
+		}
+	}
+	for (int j = 0; j < divisions - 1; j++){
+		for (int i = 0; i < divisions - 1; i++){
+			mb.push_index(5 * divisions*divisions + j * divisions + i);
+			mb.push_index(5 * divisions*divisions + j * divisions + i + 1);
+			mb.push_index(5 * divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(5 * divisions*divisions + j * divisions + i + 1);
+			mb.push_index(5 * divisions*divisions + (j + 1) * divisions + i);
+			mb.push_index(5 * divisions*divisions + (j + 1) * divisions + i + 1);
+		}
+	}
+	m_model.mesh = mb.build();
+}
+
+void Application::load_tor_lat_long(float radius, float thickness, int latDiv, int longDiv) {
+	mesh_builder mb;
+	for(int j = 0; j < longDiv + 1; j++) {
+		float phi = j * 2 * glm::pi<GLfloat>()/longDiv;
+		
+		for(int i = 0; i < latDiv; i++ ) {
+			float theta =  i * 2 * glm::pi<GLfloat>()/latDiv;
+			
+			glm::vec3 pos(thickness * glm::cos(theta), thickness * glm::sin(theta), 0);
+			glm::vec3 norm = glm::normalize(pos);
+			glm::vec3 axis( 1, 0, 0);
+			glm::vec3 transVec(0, radius, 0);
+			
+			glm::mat4 rotationMat = glm::rotate(glm::mat4(1.0f), phi, axis);
+			
+			// pos = glm::vec3(rotationMat * glm::vec4(pos, 1.0f));
+			transVec = glm::vec3(rotationMat * glm::vec4(transVec, 1.0f));
+			norm = glm::vec3(rotationMat * glm::vec4(norm, 1.0f));
+
+			glm::mat4 transMat = glm::translate(glm::mat4(1.0f), transVec);
+			pos = glm::vec3(transMat * rotationMat * glm::vec4(pos, 1.0f)); 
+
+			mb.push_vertex(mesh_vertex{pos, norm, glm::vec3(0), glm::vec3(0), glm::vec2(0)});
+			
+		}
+	}
+	for (int j = 0; j < longDiv; j++) {
 		for(int i = 0; i < latDiv - 1; i++){
 			mb.push_index(j * latDiv + i);
 			mb.push_index(j * latDiv + i + 1);
@@ -79,7 +315,6 @@ void Application::load_sphere(int latDiv, int longDiv ) {
 	}
 	m_model.mesh = mb.build();
 
-	
 }
 
 void Application::render() {
@@ -106,7 +341,6 @@ void Application::render() {
 	mat4 view = translate(mat4(1), vec3(0, 0, -m_distance))
 		* rotate(mat4(1), m_pitch, vec3(1, 0, 0))
 		* rotate(mat4(1), m_yaw,   vec3(0, 1, 0));
-
 
 	// helpful draw options
 	if (m_show_grid) drawGrid(view, proj);
@@ -135,18 +369,64 @@ void Application::renderGUI() {
 	// Select model to be drawn
 	if (ImGui::Button("Sphere LatLong")) {
 		m_shape = SP_LATLONG;
-		load_sphere(m_latDivision, m_longDivision);
+		load_sphere_lat_long(m_sp_rad, m_latDivision, m_longDivision);
 	}
+	ImGui::SameLine();
 	if (ImGui::Button("Sphere Cube")){
 		m_shape = SP_CUBE;
+		load_sphere_cube(m_sp_rad, m_sp_cube_exp_dis, m_cubeDivisions);
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Torus")){
+		m_shape = TOR_LATLONG;
+		load_tor_lat_long(m_tor_radius, m_tor_thickness, m_latDivision, m_longDivision);
+
 	}
 	if (m_shape == SP_LATLONG) {
 		int prevLatDiv = m_latDivision;
 		int prevLongDiv = m_longDivision;
-		ImGui::SliderInt("Lat Divisions", &m_latDivision, 2, 500);
-		ImGui::SliderInt("Long Divisions", &m_longDivision, 2, 500);
-		if (prevLatDiv != m_latDivision || prevLongDiv != m_longDivision){
-			load_sphere(m_latDivision, m_longDivision);
+		float prevRad = m_sp_rad;
+		ImGui::SliderFloat("Radius", &m_sp_rad, 0.5f, 5.0f);
+		ImGui::SliderInt("Lat Divisions", &m_latDivision, 2, 30);
+		ImGui::SliderInt("Long Divisions", &m_longDivision, 2, 30);
+		if (prevLatDiv != m_latDivision || prevLongDiv != m_longDivision || prevRad != m_sp_rad){
+			load_sphere_lat_long(m_sp_rad, m_latDivision, m_longDivision);
+		}
+	}
+
+	if (m_shape == SP_CUBE) {
+		int prevDivisions = m_cubeDivisions;
+		float prevRad = m_sp_rad;
+		
+		if(ImGui::Button("Explode")) {
+			m_expand = !m_expand;
+			load_sphere_cube(m_sp_rad, m_sp_cube_exp_dis, m_cubeDivisions);
+		}
+		if(m_expand) {
+			float prevExpDis = m_sp_cube_exp_dis;
+			ImGui::SliderFloat("Explode Distance", &m_sp_cube_exp_dis, 0.0f, 5.0f);
+			if (prevExpDis != m_sp_cube_exp_dis) {
+				load_sphere_cube(m_sp_rad, m_sp_cube_exp_dis, m_cubeDivisions);
+			}
+		}
+		ImGui::SliderFloat("Radius", &m_sp_rad, 0.5f, 5.0f);
+		ImGui::SliderInt("Cube Divisions", &m_cubeDivisions, 2, 30);
+		if (prevDivisions != m_cubeDivisions || prevRad != m_sp_rad){
+			load_sphere_cube(m_sp_rad, m_sp_cube_exp_dis, m_cubeDivisions);
+		}
+	}
+	if (m_shape == TOR_LATLONG) {
+		int prevLatDiv = m_latDivision;
+		int prevLongDiv = m_longDivision;
+		float prevRad = m_tor_radius;
+		float prevThick = m_tor_thickness;
+		ImGui::SliderFloat("Radius", &m_tor_radius, 2.0f, 10.0f);
+		ImGui::SliderFloat("Thickness", &m_tor_thickness, 0.5f, 3.0f);		
+		ImGui::SliderInt("Lat Divisions", &m_latDivision, 2, 30);
+		ImGui::SliderInt("Long Divisions", &m_longDivision, 2, 30);
+		if (prevLatDiv != m_latDivision || prevLongDiv != m_longDivision || prevRad != m_tor_radius || prevThick != m_tor_thickness){
+			load_tor_lat_long(m_tor_radius, m_tor_thickness, m_latDivision, m_longDivision);
+
 		}
 	}
 
@@ -161,12 +441,52 @@ void Application::renderGUI() {
 	
 	ImGui::Separator();
 
-	// example of how to use input boxes
-	static float exampleInput;
-	if (ImGui::InputFloat("example input", &exampleInput)) {
-		cout << "example input changed to " << exampleInput << endl;
+	ImGui::Text("Shader");
+	if(ImGui::Button("Phong")) {
+		load_phong();
+	}
+	ImGui::SameLine();
+	if(ImGui::Button("Cook Torrence")) {
+		load_cook_torrence();
+	}
+	ImGui::SameLine();
+	if(ImGui::Button("Oren Nayar")) {
+		load_oren_nayar();
+	}
+	ImGui::SameLine();
+	if(ImGui::Button("Combination")) {
+		load_combo_shader();
 	}
 
+	if(ImGui::Button("Normal Map")) {
+		load_normal_map_shader();
+	}
+	if(m_shader == COOK_TORRENCE) {
+
+		ImGui::SliderFloat("ka", &m_model.ka, 0.0f, 1.0f);
+		ImGui::SliderFloat("Roughness", &m_model.roughness, 0.0f, 1.0f);
+		ImGui::SliderFloat("F0", &m_model.F0, 0.0f, 1.0f);
+	}
+
+	if(m_shader == OREN_NAYAR) {
+
+		ImGui::SliderFloat("ka", &m_model.ka, 0.0f, 1.0f);
+		ImGui::SliderFloat("Mixing Ratio", &m_model.rho, 0.0f, 1.0f);
+		ImGui::SliderFloat("Albedo", &m_model.albedo, 0.0f, 1.0f);
+	}
+	if(m_shader == COMBO) {
+
+		ImGui::SliderFloat("ka", &m_model.ka, 0.0f, 1.0f);
+		ImGui::SliderFloat("Roughness", &m_model.roughness, 0.0f, 1.0f);
+		ImGui::SliderFloat("Metallic", &m_model.F0, 0.0f, 1.0f);
+		ImGui::SliderFloat("Mixing Ratio", &m_model.rho, 0.0f, 1.0f);
+		ImGui::SliderFloat("Albedo", &m_model.albedo, 0.0f, 1.0f);
+	}
+	
+	if(m_shader == NORMAL_MAP){
+
+	}
+	
 	// finish creating window
 	ImGui::End();
 }

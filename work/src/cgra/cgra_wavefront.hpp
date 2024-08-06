@@ -161,6 +161,7 @@ namespace cgra {
 			mb.push_vertex(mesh_vertex{
 				positions[wv_vertices[i].p],
 				normals[wv_vertices[i].n],
+				vec3(0), vec3(0), 
 				uvs[wv_vertices[i].t]
 			});
 		}
