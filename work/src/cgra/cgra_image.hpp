@@ -44,11 +44,11 @@ namespace cgra {
 		}
 
 		// generates and returns a texture object
-		GLuint uploadTexture(GLenum format = GL_RGBA8, GLuint tex = 0) const {
+		GLuint uploadTexture(GLint id = GL_TEXTURE0, GLenum format = GL_RGBA8, GLuint tex = 0) const {
 			assert(size.x * size.y * 4 == data.size()); // check we have consistent size and data
 
 			if (!tex) glGenTextures(1, &tex);
-			glActiveTexture(GL_TEXTURE0);
+			glActiveTexture(id);
 			glBindTexture(GL_TEXTURE_2D, tex);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
